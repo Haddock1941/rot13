@@ -13,7 +13,7 @@ where
     T: Write,
 {
     pub fn new(inner: T) -> Self {
-        Rot13Writer { inner: inner }
+        Rot13Writer { inner }
     }
 }
 
@@ -22,22 +22,29 @@ where
     T: Write,
 {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        let mut buf_writer = BufWriter::new(&mut self.inner);
+
         // collect bytes from buf with alphabet ascii characters rotated by 13 places
-        let rotated_buf: Vec<u8> = buf
-            .iter()
-            .map(|byte| {
-                // get beginning of alphabet, either upper or lowercase, or return early
-                let offset = match *byte {
-                    b'A'..=b'Z' => b'A',
-                    b'a'..=b'z' => b'a',
-                    // not in alphabet, return as is
-                    _ => return *byte,
-                };
-                // rotate byte by 13 places
-                return offset + (*byte - offset + 13) % 26;
-            })
-            .collect();
-        self.inner.write(&rotated_buf)
+        for byte in buf {
+            // get beginning of alphabet as offset, either upper or lowercase
+            let offset = match *byte {
+                b'A'..=b'Z' => b'A',
+                b'a'..=b'z' => b'a',
+
+                // not in alphabet, write as is
+                _ => {
+                    buf_writer.write(&[*byte])?;
+                    continue;
+                }
+            };
+
+            // write rotated byte
+            buf_writer.write(&[offset + (*byte - offset + 13) % 26])?;
+        }
+
+        // bufwriter writes to underlying writer in batch after flush call
+        buf_writer.flush()?;
+        Ok(buf.len())
     }
 
     fn flush(&mut self) -> std::io::Result<()> {
@@ -61,7 +68,6 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use crate::*;
-
 
     #[test]
     // Shamelessly reusing the exercise here
