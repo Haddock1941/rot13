@@ -22,6 +22,7 @@ where
     T: Write,
 {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        // new BufWriter for writing in batch, could this fit in new(inner: T) ?
         let mut buf_writer = BufWriter::new(&mut self.inner);
 
         // collect bytes from buf with alphabet ascii characters rotated by 13 places
