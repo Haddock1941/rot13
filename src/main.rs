@@ -1,6 +1,8 @@
 use std::io::BufWriter;
 use std::io::Write;
 
+/// Caesar Cipher Writer, writes to T with alphabet characters rotated by 13 places
+/// https://en.wikipedia.org/wiki/ROT13
 struct Rot13Writer<T>
 where
     T: Write,
@@ -21,6 +23,8 @@ impl<T> Write for Rot13Writer<T>
 where
     T: Write,
 {
+    /// writes buf into inner, rotating alphabet characters by 13 places
+    /// returns how many bytes were successfully written
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         // new BufWriter for writing in batch, could this fit in new(inner: T) ?
         let mut buf_writer = BufWriter::new(&mut self.inner);
@@ -48,6 +52,7 @@ where
         Ok(buf.len())
     }
 
+    /// ensures all data is pushed to inner
     fn flush(&mut self) -> std::io::Result<()> {
         self.inner.flush()
     }
